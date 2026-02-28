@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace WdMultiWarehouse\Traits;
 
@@ -10,9 +10,8 @@ trait Singleton
 
     public static function getInstance()
     {
-        if ( ! ( self::$instance instanceof self ) ) 
-        {
-            self::$instance = new self;
+        if ( ! ( self::$instance instanceof self ) ) {
+            self::$instance = new self();
         }
         return self::$instance;
     }
