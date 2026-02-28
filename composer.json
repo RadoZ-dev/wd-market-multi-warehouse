@@ -1,0 +1,23 @@
+{
+  "name": "wp-rado/wd-market-multi-warehouse",
+  "authors": [
+    {
+      "name": "Radoslav Zdravkovic",
+      "email": "zdravkovicradoslav@gmail.com"
+    }
+  ],
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "require": {
+    "php" : ">=7.0.0",
+    "twig/twig": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "WdMultiWarehouse\\": "src/"
+    }
+  }
+}
