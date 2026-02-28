@@ -28,10 +28,12 @@ define( 'WDMW_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 
 require_once WDMW_PLUGIN_DIR . 'vendor/autoload.php';
 
+use WdMultiWarehouse\Core\Plugin;
+
 /**
  * Halt activation when WooCommerce is not active.
  */
-register_activation_hook( __FILE__, static function () : void {
+register_activation_hook( __FILE__, static function (): void {
     if ( ! class_exists( 'WooCommerce' )
         && ! in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ), true )
     ) {
@@ -47,7 +49,7 @@ register_activation_hook( __FILE__, static function () : void {
 /**
  * Declare compatibility with WooCommerce features (HPOS, Cart/Checkout Blocks).
  */
-add_action( 'before_woocommerce_init', static function () : void {
+add_action( 'before_woocommerce_init', static function (): void {
     if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
             'custom_order_tables',
@@ -60,4 +62,17 @@ add_action( 'before_woocommerce_init', static function () : void {
             true
         );
     }
+} );
+
+add_action( 'plugins_loaded', static function (): void {
+    if ( ! class_exists( 'WooCommerce' ) ) {
+        add_action( 'admin_notices', static function (): void {
+            echo '<div class="notice notice-error"><p>';
+            echo esc_html__( 'WD Market Multi-Warehouse requires WooCommerce to be installed and active.', 'wd-market-multi-warehouse' );
+            echo '</p></div>';
+        } );
+        return;
+    }
+
+    Plugin::getInstance()->init();
 } );
