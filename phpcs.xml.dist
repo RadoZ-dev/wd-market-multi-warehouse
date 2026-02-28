@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<ruleset name="WD Market Multi-Warehouse">
+    <description>Custom PHPCS ruleset — WordPress spacing rules with PSR-4/PSR-12 structure.</description>
+
+    <!-- Scan only src/ and the main plugin file -->
+    <file>./src</file>
+    <file>./wd-market-multi-warehouse.php</file>
+
+    <!-- Exclude vendor and build artifacts -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/assets/*</exclude-pattern>
+
+    <!-- Use WordPress Extra as a base -->
+    <rule ref="WordPress-Extra">
+        <!-- Allow short array syntax [] -->
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+        <!-- Allow PSR-4 filenames (Activator.php not class-activator.php) -->
+        <exclude name="WordPress.Files.FileName"/>
+        <!-- Allow camelCase methods and variables (PSR-12 convention) -->
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+        <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+        <!-- Allow Allman-style braces (brace on new line) -->
+        <exclude name="WordPress.WhiteSpace.ControlStructureSpacing.ExtraSpaceAfterCloseParenthesis"/>
+        <exclude name="Generic.Classes.OpeningBraceSameLine"/>
+        <exclude name="Generic.Functions.OpeningFunctionBraceKernighanRitchie"/>
+        <!-- We use spaces not tabs -->
+        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+    </rule>
+
+    <!-- Use spaces for indentation (4 spaces) -->
+    <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+    <arg name="tab-width" value="4"/>
+
+    <!-- Enforce spaces inside parentheses: foo( $bar ) -->
+    <rule ref="WordPress.WhiteSpace.ControlStructureSpacing"/>
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing">
+        <properties>
+            <property name="equalsSpacing" value="1"/>
+            <property name="requiredSpacesAfterOpen" value="1"/>
+            <property name="requiredSpacesBeforeClose" value="1"/>
+        </properties>
+    </rule>
+
+    <!-- No space before colon in return types: func(): void -->
+    <rule ref="PSR12.Functions.ReturnTypeDeclaration"/>
+
+    <!-- Allow our text domain -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="wd-market-multi-warehouse"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Allow \r\n line endings (Windows) -->
+    <rule ref="Generic.Files.LineEndings">
+        <properties>
+            <property name="eolChar" value="\n"/>
+        </properties>
+    </rule>
+
+    <!-- Set minimum supported versions -->
+    <config name="minimum_wp_version" value="5.8"/>
+    <config name="testVersion" value="7.4-"/>
+</ruleset>
