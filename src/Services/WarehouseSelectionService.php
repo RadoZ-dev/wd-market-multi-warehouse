@@ -6,6 +6,7 @@ namespace WdMultiWarehouse\Services;
 
 use WdMultiWarehouse\Contracts\WarehouseRepositoryInterface;
 use WdMultiWarehouse\Contracts\StockRepositoryInterface;
+use WdMultiWarehouse\Contracts\GeocoderInterface;
 use WdMultiWarehouse\Models\Warehouse;
 
 class WarehouseSelectionService
@@ -13,15 +14,18 @@ class WarehouseSelectionService
     private WarehouseRepositoryInterface $warehouseRepository;
     private StockRepositoryInterface $stockRepository;
     private DistanceService $distanceService;
+    private GeocoderInterface $geocoder;
 
     public function __construct(
         WarehouseRepositoryInterface $warehouseRepository,
         StockRepositoryInterface $stockRepository,
-        DistanceService $distanceService
+        DistanceService $distanceService,
+        GeocoderInterface $geocoder
     ) {
         $this->warehouseRepository = $warehouseRepository;
         $this->stockRepository     = $stockRepository;
         $this->distanceService     = $distanceService;
+        $this->geocoder            = $geocoder;
     }
 
     /**
@@ -42,7 +46,7 @@ class WarehouseSelectionService
             return null;
         }
 
-        $customerCoordinates = $this->distanceService->getGeocoder()->geocode( $shippingAddress );
+        $customerCoordinates = $this->geocoder->geocode( $shippingAddress );
 
         if ( $customerCoordinates === null ) {
             return $this->fallbackToFirstAvailable( $productId, $activeWarehouses );
