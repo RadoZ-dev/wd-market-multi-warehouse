@@ -32,9 +32,9 @@ class ProductStockAdmin
     {
         add_filter( 'woocommerce_product_data_tabs', [ $this, 'addWarehouseTab' ] );
         add_action( 'woocommerce_product_data_panels', [ $this, 'renderWarehousePanel' ] );
-        add_action( 'woocommerce_process_product_meta', [ $this, 'saveStockFields' ] );
+        add_action( 'woocommerce_process_product_meta', [ $this, 'saveStockFields' ], 20 );
         add_action( 'woocommerce_product_after_variable_attributes', [ $this, 'renderVariationStockFields' ], 10, 3 );
-        add_action( 'woocommerce_save_product_variation', [ $this, 'saveVariationStockFields' ], 10, 2 );
+        add_action( 'woocommerce_save_product_variation', [ $this, 'saveVariationStockFields' ], 20, 2 );
     }
 
     /**

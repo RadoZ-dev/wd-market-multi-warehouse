@@ -62,7 +62,7 @@ class ProductStockAdminTest extends TestCase
 
         Functions\expect( 'add_action' )
             ->once()
-            ->with( 'woocommerce_process_product_meta', Mockery::type( 'array' ) );
+            ->with( 'woocommerce_process_product_meta', Mockery::type( 'array' ), 20 );
 
         Functions\expect( 'add_action' )
             ->once()
@@ -70,7 +70,7 @@ class ProductStockAdminTest extends TestCase
 
         Functions\expect( 'add_action' )
             ->once()
-            ->with( 'woocommerce_save_product_variation', Mockery::type( 'array' ), 10, 2 );
+            ->with( 'woocommerce_save_product_variation', Mockery::type( 'array' ), 20, 2 );
 
         $this->productStockAdmin->register();
 
