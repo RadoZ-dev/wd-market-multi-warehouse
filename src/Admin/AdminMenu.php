@@ -90,9 +90,10 @@ class AdminMenu
         $this->renderer->display(
             'admin/warehouse-list.twig',
             [
-                'warehouses' => $warehouses,
-                'add_url'    => admin_url( 'admin.php?page=wdmw-warehouses&action=add' ),
-                'page_title' => __( 'Warehouses', 'wd-market-multi-warehouse' ),
+                'warehouses'       => $warehouses,
+                'add_url'          => admin_url( 'admin.php?page=wdmw-warehouses&action=add' ),
+                'page_title'       => __( 'Warehouses', 'wd-market-multi-warehouse' ),
+                'geocoding_failed' => isset( $_GET['geocoding_failed'] ),
             ]
         );
     }
@@ -134,11 +135,17 @@ class AdminMenu
         $warehouse->setIsActive( $active );
         $warehouse->setExtraShippingCost( $extra );
 
-        $this->geocodeWarehouse( $warehouse );
+        $geocodingSucceeded = $this->geocodeWarehouse( $warehouse );
 
         $this->warehouseRepository->save( $warehouse );
 
-        wp_safe_redirect( admin_url( 'admin.php?page=wdmw-warehouses&saved=1' ) );
+        $redirectUrl = admin_url( 'admin.php?page=wdmw-warehouses&saved=1' );
+
+        if ( ! $geocodingSucceeded ) {
+            $redirectUrl = add_query_arg( 'geocoding_failed', '1', $redirectUrl );
+        }
+
+        wp_safe_redirect( $redirectUrl );
         exit;
     }
 
@@ -154,10 +161,15 @@ class AdminMenu
         exit;
     }
 
-    private function geocodeWarehouse( Warehouse $warehouse ): void
+    /**
+     * Attempt to geocode the warehouse address.
+     *
+     * @return bool True on success or empty address (no geocoding needed), false when geocoding failed.
+     */
+    private function geocodeWarehouse( Warehouse $warehouse ): bool
     {
         if ( empty( $warehouse->getAddress() ) ) {
-            return;
+            return true;
         }
 
         $coordinates = $this->geocoder->geocode( $warehouse->getAddress() );
@@ -165,6 +177,9 @@ class AdminMenu
         if ( $coordinates !== null ) {
             $warehouse->setLatitude( $coordinates[0] );
             $warehouse->setLongitude( $coordinates[1] );
+            return true;
         }
+
+        return false;
     }
 }

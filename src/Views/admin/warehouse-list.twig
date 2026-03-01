@@ -7,6 +7,13 @@
         </div>
     {% endif %}
 
+    {% if geocoding_failed %}
+        <div class="notice notice-warning is-dismissible">
+            <p>{{ 'Geocoding failed: the address could not be resolved to coordinates. The warehouse was saved without coordinates. Please verify the address format.'|trans }}</p>
+            <p><em>{{ 'Tip: Use the format — Street Number, ZIP City, Country (e.g. Draškovićeva 80, 10000 Zagreb, Hrvatska)'|trans }}</em></p>
+        </div>
+    {% endif %}
+
     {% if deleted is defined and deleted %}
         <div class="notice notice-success is-dismissible">
             <p>{{ 'Warehouse deleted successfully.'|trans }}</p>

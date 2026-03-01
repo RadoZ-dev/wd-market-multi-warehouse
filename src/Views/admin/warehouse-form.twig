@@ -36,7 +36,8 @@
                               rows="3"
                               required>{{ is_edit ? warehouse.address : '' }}</textarea>
                     <p class="description">
-                        {{ 'Full address for geocoding and distance calculation.'|trans }}
+                        {{ 'Full address for geocoding and distance calculation.'|trans }}<br>
+                        {{ 'Format: Street Number, ZIP City, Country (e.g. Draškovićeva 80, 10000 Zagreb, Hrvatska)'|trans }}
                     </p>
                 </td>
             </tr>
