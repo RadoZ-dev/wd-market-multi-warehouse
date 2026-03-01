@@ -28,10 +28,11 @@ define( 'WDMW_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 
 require_once WDMW_PLUGIN_DIR . 'vendor/autoload.php';
 
+use WdMultiWarehouse\Core\Activator;
 use WdMultiWarehouse\Core\Plugin;
 
 /**
- * Halt activation when WooCommerce is not active.
+ * Halt activation when WooCommerce is not active; create DB tables otherwise.
  */
 register_activation_hook(
     __FILE__,
@@ -46,6 +47,8 @@ register_activation_hook(
                 [ 'back_link' => true ]
             );
         }
+
+        Activator::activate();
     }
 );
 
