@@ -1,0 +1,291 @@
+# Copyright (C) 2026 Radoslav Zdravkovic
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: WD Market Multi-Warehouse 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wd-market-multi-warehouse\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-03-01T20:52:47+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: wd-market-multi-warehouse\n"
+
+#. Plugin Name of the plugin
+#: wd-market-multi-warehouse.php
+msgid "WD Market Multi-Warehouse"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: wd-market-multi-warehouse.php
+msgid "https://github.com/RadoZ-dev/wd-market-multi-warehouse"
+msgstr ""
+
+#. Description of the plugin
+#: wd-market-multi-warehouse.php
+msgid "Multi-warehouse inventory management for WooCommerce — per-warehouse stock, proximity-based allocation at checkout, and catalog filtering."
+msgstr ""
+
+#. Author of the plugin
+#: wd-market-multi-warehouse.php
+msgid "Radoslav Zdravkovic"
+msgstr ""
+
+#. Author URI of the plugin
+#: wd-market-multi-warehouse.php
+msgid "https://github.com/RadoZ-dev"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:37
+#: src/Admin/AdminMenu.php:38
+#: src/Admin/AdminMenu.php:95
+msgid "Warehouses"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:70
+#: src/Admin/SettingsPage.php:92
+msgid "Security check failed."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:74
+msgid "Unauthorized access."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:112
+msgid "Edit Warehouse"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:113
+msgid "Add Warehouse"
+msgstr ""
+
+#: src/Admin/ProductStockAdmin.php:46
+msgid "Warehouse"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:29
+#: src/Admin/SettingsPage.php:30
+msgid "Settings"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:75
+msgid "Multi-Warehouse Settings"
+msgstr ""
+
+#: src/Frontend/CatalogFilter.php:49
+msgid "Filter by warehouse:"
+msgstr ""
+
+#: src/Frontend/CatalogFilter.php:50
+msgid "All Warehouses"
+msgstr ""
+
+#. translators: %s: product name
+#: src/Frontend/CheckoutHandler.php:51
+#, php-format
+msgid "Warning: No warehouse allocation found for product \"%s\"."
+msgstr ""
+
+#. translators: 1: product name 2: warehouse name
+#: src/Frontend/CheckoutHandler.php:78
+#, php-format
+msgid "Product \"%1$s\" allocated from warehouse \"%2$s\"."
+msgstr ""
+
+#. translators: %s: list of product names
+#: src/Frontend/CheckoutHandler.php:146
+#, php-format
+msgid "Note: An additional shipping charge may apply for the following products as they will be shipped from a more distant warehouse: %s"
+msgstr ""
+
+#: src/Frontend/CheckoutHandler.php:184
+msgid "Additional warehouse shipping"
+msgstr ""
+
+#: wd-market-multi-warehouse.php:45
+#: wd-market-multi-warehouse.php:84
+msgid "WD Market Multi-Warehouse requires WooCommerce to be installed and active."
+msgstr ""
+
+#: wd-market-multi-warehouse.php:46
+msgid "Plugin Activation Error"
+msgstr ""
+
+#. Twig template strings (rendered via |trans filter → __())
+
+#: src/Views/admin/warehouse-list.twig:6
+msgid "Warehouse saved successfully."
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:12
+msgid "Warehouse deleted successfully."
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:16
+msgid "Add New Warehouse"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:21
+msgid "ID"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:22
+msgid "Name"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:23
+#: src/Views/admin/warehouse-form.twig:30
+msgid "Address"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:24
+#: src/Views/admin/warehouse-form.twig:75
+msgid "Coordinates"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:25
+#: src/Views/admin/warehouse-form.twig:44
+msgid "Status"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:26
+#: src/Views/admin/warehouse-form.twig:57
+msgid "Extra Shipping Cost"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:27
+msgid "Actions"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:33
+msgid "No warehouses found. Add your first warehouse above."
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:45
+msgid "Not geocoded"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:50
+#: src/Views/admin/warehouse-form.twig:51
+msgid "Active"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:52
+msgid "Inactive"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:58
+msgid "Edit"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:60
+msgid "Are you sure you want to delete this warehouse?"
+msgstr ""
+
+#: src/Views/admin/warehouse-list.twig:64
+msgid "Delete"
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:4
+msgid "Back to Warehouses"
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:17
+msgid "Warehouse Name"
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:39
+msgid "Full address for geocoding and distance calculation."
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:68
+msgid "Additional shipping cost when this warehouse is NOT the closest to the customer."
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:78
+msgid "Lat:"
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:79
+msgid "Lon:"
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:82
+msgid "Auto-detected from address. Will update when you save."
+msgstr ""
+
+#: src/Views/admin/warehouse-form.twig:91
+msgid "Update Warehouse"
+msgstr ""
+
+#: src/Views/admin/settings.twig:6
+msgid "Settings saved successfully."
+msgstr ""
+
+#: src/Views/admin/settings.twig:16
+msgid "Geocoding Provider"
+msgstr ""
+
+#: src/Views/admin/settings.twig:21
+msgid "Free"
+msgstr ""
+
+#: src/Views/admin/settings.twig:28
+msgid "Nominatim is free and requires no API key. Google Maps requires an API key below."
+msgstr ""
+
+#: src/Views/admin/settings.twig:34
+msgid "Google Maps API Key"
+msgstr ""
+
+#: src/Views/admin/settings.twig:43
+msgid "Required only if using Google Maps as the geocoding provider."
+msgstr ""
+
+#: src/Views/admin/settings.twig:48
+msgid "Extra Shipping for Distant Warehouses"
+msgstr ""
+
+#: src/Views/admin/settings.twig:55
+msgid "Enable additional shipping cost when order is fulfilled from a non-closest warehouse"
+msgstr ""
+
+#: src/Views/admin/settings.twig:58
+msgid "When enabled, the extra shipping cost defined per warehouse will be added as a fee at checkout."
+msgstr ""
+
+#: src/Views/admin/settings.twig:66
+msgid "Save Settings"
+msgstr ""
+
+#: src/Views/admin/product-stock.twig:4
+#: src/Views/admin/variation-stock.twig:2
+msgid "Warehouse Stock"
+msgstr ""
+
+#: src/Views/admin/product-stock.twig:6
+msgid "Set stock quantities per warehouse. Total stock is synced to WooCommerce automatically."
+msgstr ""
+
+#: src/Views/admin/product-stock.twig:12
+msgid "No active warehouses found. Please create a warehouse first."
+msgstr ""
+
+#: src/Views/admin/product-stock.twig:36
+msgid "Total Stock:"
+msgstr ""
+
+#: src/Views/admin/variation-stock.twig:5
+msgid "No active warehouses found."
+msgstr ""
+
+#: src/Views/admin/variation-stock.twig:24
+msgid "Total:"
+msgstr ""
+
+#: src/Views/frontend/warehouse-filter.twig:14
+msgid "Filter"
+msgstr ""

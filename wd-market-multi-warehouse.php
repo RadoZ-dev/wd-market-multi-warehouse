@@ -76,6 +76,12 @@ add_action(
 add_action(
     'plugins_loaded',
     static function (): void {
+        load_plugin_textdomain(
+            'wd-market-multi-warehouse',
+            false,
+            dirname( WDMW_PLUGIN_BASENAME ) . '/languages'
+        );
+
         if ( ! class_exists( 'WooCommerce' ) ) {
             add_action(
                 'admin_notices',
