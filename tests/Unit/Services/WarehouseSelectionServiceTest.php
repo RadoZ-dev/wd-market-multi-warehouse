@@ -65,15 +65,15 @@ class WarehouseSelectionServiceTest extends TestCase
 
     // ─── selectWarehouse ───────────────────────────────────────
 
-    public function testReturnsNullWhenNoActiveWarehouses(): void
+    public function testReturnsEmptyWhenNoActiveWarehouses(): void
     {
         $this->warehouseRepository
             ->shouldReceive( 'findActive' )
             ->andReturn( [] );
 
-        $result = $this->service->selectWarehouse( 100, 'Sofia, Bulgaria' );
+        $result = $this->service->selectWarehouse( 100, 1, 'Sofia, Bulgaria' );
 
-        $this->assertNull( $result );
+        $this->assertEmpty( $result );
     }
 
     public function testSelectsClosestWarehouseWithStock(): void
@@ -100,12 +100,13 @@ class WarehouseSelectionServiceTest extends TestCase
 
         Functions\expect( 'get_option' )->andReturn( '0' );
 
-        $result = $this->service->selectWarehouse( 100, 'Sofia, Bulgaria' );
+        $result = $this->service->selectWarehouse( 100, 5, 'Sofia, Bulgaria' );
 
-        $this->assertNotNull( $result );
-        $this->assertSame( 1, $result['warehouse']->getId() );
-        $this->assertTrue( $result['is_closest'] );
-        $this->assertSame( 0.0, $result['extra_cost'] );
+        $this->assertCount( 1, $result );
+        $this->assertSame( 1, $result[0]['warehouse']->getId() );
+        $this->assertSame( 5, $result[0]['quantity'] );
+        $this->assertTrue( $result[0]['is_closest'] );
+        $this->assertSame( 0.0, $result[0]['extra_cost'] );
     }
 
     public function testSkipsClosestIfNoStockAndPicksNext(): void
@@ -132,12 +133,13 @@ class WarehouseSelectionServiceTest extends TestCase
             ->with( 'wdmw_extra_shipping_enabled', '0' )
             ->andReturn( '1' );
 
-        $result = $this->service->selectWarehouse( 100, 'Sofia, Bulgaria' );
+        $result = $this->service->selectWarehouse( 100, 5, 'Sofia, Bulgaria' );
 
-        $this->assertNotNull( $result );
-        $this->assertSame( 2, $result['warehouse']->getId() );
-        $this->assertFalse( $result['is_closest'] );
-        $this->assertSame( 5.00, $result['extra_cost'] );
+        $this->assertCount( 1, $result );
+        $this->assertSame( 2, $result[0]['warehouse']->getId() );
+        $this->assertSame( 5, $result[0]['quantity'] );
+        $this->assertFalse( $result[0]['is_closest'] );
+        $this->assertSame( 5.00, $result[0]['extra_cost'] );
     }
 
     public function testNoExtraCostWhenSettingDisabled(): void
@@ -162,12 +164,12 @@ class WarehouseSelectionServiceTest extends TestCase
             ->with( 'wdmw_extra_shipping_enabled', '0' )
             ->andReturn( '0' );
 
-        $result = $this->service->selectWarehouse( 100, 'Sofia, Bulgaria' );
+        $result = $this->service->selectWarehouse( 100, 5, 'Sofia, Bulgaria' );
 
-        $this->assertSame( 0.0, $result['extra_cost'] );
+        $this->assertSame( 0.0, $result[0]['extra_cost'] );
     }
 
-    public function testReturnsNullWhenNoWarehouseHasStock(): void
+    public function testReturnsEmptyWhenNoWarehouseHasStock(): void
     {
         $warehouse1 = $this->createWarehouse( 1, 42.70, 23.32 );
 
@@ -183,9 +185,53 @@ class WarehouseSelectionServiceTest extends TestCase
             ->shouldReceive( 'getStockMapForProduct' )
             ->andReturn( [] );
 
-        $result = $this->service->selectWarehouse( 100, 'Sofia, Bulgaria' );
+        $result = $this->service->selectWarehouse( 100, 1, 'Sofia, Bulgaria' );
 
-        $this->assertNull( $result );
+        $this->assertEmpty( $result );
+    }
+
+    // ─── Split allocation ─────────────────────────────────────
+
+    public function testSplitsQuantityAcrossWarehousesWhenNeeded(): void
+    {
+        // Warehouse 1 (closest): has 5 items.
+        // Warehouse 2 (farther): has 7 items.
+        // Customer orders 10 → should take 5 from WH1 + 5 from WH2.
+        $warehouse1 = $this->createWarehouse( 1, 42.70, 23.32 );
+        $warehouse2 = $this->createWarehouse( 2, 42.15, 24.75, 3.00 );
+
+        $this->warehouseRepository
+            ->shouldReceive( 'findActive' )
+            ->andReturn( [ $warehouse1, $warehouse2 ] );
+
+        $this->geocoder
+            ->shouldReceive( 'geocode' )
+            ->andReturn( [ 42.6977, 23.3219 ] );
+
+        $this->stockRepository
+            ->shouldReceive( 'getStockMapForProduct' )
+            ->with( 100 )
+            ->andReturn( [ 1 => 5, 2 => 7 ] );
+
+        Functions\expect( 'get_option' )
+            ->with( 'wdmw_extra_shipping_enabled', '0' )
+            ->andReturn( '1' );
+
+        $result = $this->service->selectWarehouse( 100, 10, 'Sofia, Bulgaria' );
+
+        $this->assertCount( 2, $result );
+
+        // First allocation: closest warehouse, 5 items.
+        $this->assertSame( 1, $result[0]['warehouse']->getId() );
+        $this->assertSame( 5, $result[0]['quantity'] );
+        $this->assertTrue( $result[0]['is_closest'] );
+        $this->assertSame( 0.0, $result[0]['extra_cost'] );
+
+        // Second allocation: farther warehouse, 5 items (remainder).
+        $this->assertSame( 2, $result[1]['warehouse']->getId() );
+        $this->assertSame( 5, $result[1]['quantity'] );
+        $this->assertFalse( $result[1]['is_closest'] );
+        $this->assertSame( 3.00, $result[1]['extra_cost'] );
     }
 
     // ─── Geocoding fallback ────────────────────────────────────
@@ -209,12 +255,50 @@ class WarehouseSelectionServiceTest extends TestCase
             ->with( 100 )
             ->andReturn( [ 2 => 15 ] );
 
-        $result = $this->service->selectWarehouse( 100, 'Bad Address' );
+        $result = $this->service->selectWarehouse( 100, 3, 'Bad Address' );
 
-        $this->assertNotNull( $result );
-        $this->assertSame( 2, $result['warehouse']->getId() );
-        $this->assertTrue( $result['is_closest'] );
-        $this->assertSame( 0.0, $result['extra_cost'] );
+        $this->assertCount( 1, $result );
+        $this->assertSame( 2, $result[0]['warehouse']->getId() );
+        $this->assertSame( 3, $result[0]['quantity'] );
+        $this->assertTrue( $result[0]['is_closest'] );
+        $this->assertSame( 0.0, $result[0]['extra_cost'] );
+    }
+
+    public function testFallbackSplitsAcrossWarehouses(): void
+    {
+        $warehouse1 = $this->createWarehouse( 1, 42.70, 23.32 );
+        $warehouse2 = $this->createWarehouse( 2, 42.15, 24.75, 4.00 );
+
+        $this->warehouseRepository
+            ->shouldReceive( 'findActive' )
+            ->andReturn( [ $warehouse1, $warehouse2 ] );
+
+        $this->geocoder
+            ->shouldReceive( 'geocode' )
+            ->andReturn( null );
+
+        $this->stockRepository
+            ->shouldReceive( 'getStockMapForProduct' )
+            ->with( 100 )
+            ->andReturn( [ 1 => 4, 2 => 8 ] );
+
+        Functions\expect( 'get_option' )
+            ->with( 'wdmw_extra_shipping_enabled', '0' )
+            ->andReturn( '1' );
+
+        $result = $this->service->selectWarehouse( 100, 7, 'Bad Address' );
+
+        $this->assertCount( 2, $result );
+
+        // First allocation: primary warehouse, 4 items.
+        $this->assertSame( 4, $result[0]['quantity'] );
+        $this->assertTrue( $result[0]['is_closest'] );
+        $this->assertSame( 0.0, $result[0]['extra_cost'] );
+
+        // Second allocation: non-primary, 3 items, extra cost applied.
+        $this->assertSame( 3, $result[1]['quantity'] );
+        $this->assertFalse( $result[1]['is_closest'] );
+        $this->assertSame( 4.00, $result[1]['extra_cost'] );
     }
 
     // ─── Warehouses without coordinates ────────────────────────
@@ -248,9 +332,10 @@ class WarehouseSelectionServiceTest extends TestCase
 
         Functions\expect( 'get_option' )->andReturn( '0' );
 
-        $result = $this->service->selectWarehouse( 100, 'Sofia' );
+        $result = $this->service->selectWarehouse( 100, 3, 'Sofia' );
 
-        $this->assertSame( 2, $result['warehouse']->getId() );
+        $this->assertCount( 1, $result );
+        $this->assertSame( 2, $result[0]['warehouse']->getId() );
     }
 
     // ─── selectWarehousesForCart ────────────────────────────────
@@ -285,5 +370,6 @@ class WarehouseSelectionServiceTest extends TestCase
 
         $this->assertArrayHasKey( 100, $allocations );
         $this->assertArrayNotHasKey( 200, $allocations );
+        $this->assertSame( 2, $allocations[100][0]['quantity'] );
     }
 }

@@ -22,18 +22,44 @@ class CheckoutHandler
 
     public function register(): void
     {
-        add_action( 'woocommerce_checkout_order_processed', [ $this, 'allocateWarehouseStock' ], 10, 3 );
-        add_action( 'woocommerce_before_checkout_form', [ $this, 'displayWarehouseNotices' ] );
-        add_filter( 'woocommerce_cart_shipping_packages', [ $this, 'addExtraShippingCost' ] );
+        // Allocate per-warehouse stock when the order reaches a paid status.
+        // These hooks fire reliably for both classic and block checkout flows.
+        add_action( 'woocommerce_order_status_processing', [ $this, 'maybeAllocateWarehouseStock' ] );
+        add_action( 'woocommerce_order_status_completed', [ $this, 'maybeAllocateWarehouseStock' ] );
 
-        // Prevent WooCommerce from reducing stock globally — we handle it per warehouse
+        // Prevent WooCommerce from reducing stock globally — we handle it per warehouse.
         add_filter( 'woocommerce_can_reduce_order_stock', [ $this, 'preventDefaultStockReduction' ], 10, 2 );
+
+        add_action( 'woocommerce_before_checkout_form', [ $this, 'displayWarehouseNotices' ] );
+        add_action( 'woocommerce_cart_calculate_fees', [ $this, 'addExtraShippingFee' ] );
+
+        // Admin order meta box — show warehouse allocations & extra cost.
+        add_action( 'add_meta_boxes', [ $this, 'addWarehouseMetaBox' ] );
     }
 
     /**
-     * After the order is created, allocate and reduce stock from the selected warehouses.
+     * Idempotent wrapper — allocate only once per order.
      */
-    public function allocateWarehouseStock( int $orderId, array $postedData, \WC_Order $order ): void
+    public function maybeAllocateWarehouseStock( int $orderId ): void
+    {
+        $order = wc_get_order( $orderId );
+
+        if ( ! $order ) {
+            return;
+        }
+
+        // Already processed — skip.
+        if ( $order->get_meta( '_wdmw_stock_allocated' ) ) {
+            return;
+        }
+
+        $this->allocateWarehouseStock( $order );
+    }
+
+    /**
+     * Allocate and reduce stock from the selected warehouses.
+     */
+    public function allocateWarehouseStock( \WC_Order $order ): void
     {
         $shippingAddress = $this->buildShippingAddress( $order );
         $cartItems       = $this->getCartProductQuantities( $order );
@@ -42,9 +68,8 @@ class CheckoutHandler
 
         foreach ( $order->get_items() as $item ) {
             $productId = $item->get_product_id();
-            $quantity  = $item->get_quantity();
 
-            if ( ! isset( $allocations[ $productId ] ) ) {
+            if ( ! isset( $allocations[ $productId ] ) || empty( $allocations[ $productId ] ) ) {
                 $order->add_order_note(
                     sprintf(
                     /* translators: %s: product name */
@@ -55,38 +80,160 @@ class CheckoutHandler
                 continue;
             }
 
-            $allocation = $allocations[ $productId ];
-            $warehouse  = $allocation['warehouse'];
+            $productAllocations = $allocations[ $productId ];
+            $warehouseNames     = [];
 
-            $this->stockService->reduceStockFromWarehouse(
-                $warehouse->getId(),
-                $productId,
-                $quantity
-            );
+            foreach ( $productAllocations as $allocation ) {
+                $warehouse   = $allocation['warehouse'];
+                $allocateQty = $allocation['quantity'];
 
-            $item->add_meta_data( '_wdmw_warehouse_id', $warehouse->getId() );
-            $item->add_meta_data( '_wdmw_warehouse_name', $warehouse->getName() );
-            $item->save();
+                $this->stockService->reduceStockFromWarehouse(
+                    $warehouse->getId(),
+                    $productId,
+                    $allocateQty
+                );
 
-            if ( ! $allocation['is_closest'] && $allocation['extra_cost'] > 0 ) {
-                $totalExtraCost += $allocation['extra_cost'];
+                $warehouseNames[] = sprintf( '%s (%d)', $warehouse->getName(), $allocateQty );
+
+                if ( ! $allocation['is_closest'] && $allocation['extra_cost'] > 0 ) {
+                    $totalExtraCost += $allocation['extra_cost'];
+                }
             }
+
+            // Store the primary (first) warehouse on the line item.
+            $primaryWarehouse = $productAllocations[0]['warehouse'];
+            $item->add_meta_data( '_wdmw_warehouse_id', $primaryWarehouse->getId() );
+            $item->add_meta_data( '_wdmw_warehouse_name', $primaryWarehouse->getName() );
+            $item->save();
 
             $order->add_order_note(
                 sprintf(
-                /* translators: 1: product name 2: warehouse name */
-                    __( 'Product "%1$s" allocated from warehouse "%2$s".', 'wd-market-multi-warehouse' ),
+                /* translators: 1: product name 2: warehouse allocation details */
+                    __( 'Product "%1$s" allocated from: %2$s.', 'wd-market-multi-warehouse' ),
                     $item->get_name(),
-                    $warehouse->getName()
+                    implode( ', ', $warehouseNames )
                 )
             );
         }
 
+        // Mark as allocated so we don't process again and WC doesn't double-reduce.
+        $order->update_meta_data( '_wdmw_stock_allocated', '1' );
+
         if ( $totalExtraCost > 0 ) {
             $order->update_meta_data( '_wdmw_extra_shipping_cost', $totalExtraCost );
+            $order->add_order_note(
+                sprintf(
+                /* translators: %s: formatted extra shipping cost */
+                    __( 'Additional warehouse shipping fee of %s applied.', 'wd-market-multi-warehouse' ),
+                    wc_price( $totalExtraCost )
+                )
+            );
+            $this->ensureExtraShippingFeeOnOrder( $order, $totalExtraCost );
+            $order->calculate_totals(); // Recalculates & saves.
+        } else {
+            $order->save();
+        }
+    }
+
+    /**
+     * Ensure the extra-shipping fee line exists on the order.
+     *
+     * If the cart-time fee (addExtraShippingFee) was already transferred to the
+     * order we leave it alone; otherwise we create a new WC_Order_Item_Fee so
+     * the charge is never silently dropped (e.g. in block checkout).
+     */
+    private function ensureExtraShippingFeeOnOrder( \WC_Order $order, float $amount ): void
+    {
+        $feeName = __( 'Additional warehouse shipping', 'wd-market-multi-warehouse' );
+
+        foreach ( $order->get_fees() as $feeItem ) {
+            if ( $feeItem->get_name() === $feeName ) {
+                // Fee already present — update amount if the actual allocation differs.
+                if ( (float) $feeItem->get_total() !== $amount ) {
+                    $feeItem->set_total( (string) $amount );
+                    $feeItem->save();
+                }
+                return;
+            }
         }
 
-        $order->save();
+        // Fee not yet on the order — add it.
+        $fee = new \WC_Order_Item_Fee();
+        $fee->set_name( $feeName );
+        $fee->set_total( (string) $amount );
+        $fee->set_tax_status( 'none' );
+        $order->add_item( $fee );
+    }
+
+    /**
+     * Admin meta box: show warehouse allocations and extra cost on the order edit page.
+     */
+    public function addWarehouseMetaBox(): void
+    {
+        $screens = [ 'shop_order', 'woocommerce_page_wc-orders' ];
+
+        foreach ( $screens as $screen ) {
+            add_meta_box(
+                'wdmw-warehouse-allocations',
+                __( 'Warehouse Allocations', 'wd-market-multi-warehouse' ),
+                [ $this, 'renderWarehouseMetaBox' ],
+                $screen,
+                'side',
+                'default'
+            );
+        }
+    }
+
+    /**
+     * Render the warehouse allocation details inside the meta box.
+     *
+     * @param \WP_Post|\WC_Order $postOrOrder Post object (legacy) or Order object (HPOS).
+     */
+    public function renderWarehouseMetaBox( $postOrOrder ): void
+    {
+        if ( $postOrOrder instanceof \WP_Post ) {
+            $order = wc_get_order( $postOrOrder->ID );
+        } else {
+            $order = $postOrOrder;
+        }
+
+        if ( ! $order ) {
+            return;
+        }
+
+        $hasAllocations = false;
+
+        echo '<table class="widefat fixed striped" style="margin:0">';
+        echo '<thead><tr>';
+        echo '<th>' . esc_html__( 'Product', 'wd-market-multi-warehouse' ) . '</th>';
+        echo '<th>' . esc_html__( 'Warehouse', 'wd-market-multi-warehouse' ) . '</th>';
+        echo '</tr></thead><tbody>';
+
+        foreach ( $order->get_items() as $item ) {
+            $warehouseName = $item->get_meta( '_wdmw_warehouse_name' );
+
+            if ( $warehouseName ) {
+                $hasAllocations = true;
+                echo '<tr>';
+                echo '<td>' . esc_html( $item->get_name() ) . '</td>';
+                echo '<td>' . esc_html( $warehouseName ) . '</td>';
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody></table>';
+
+        if ( ! $hasAllocations ) {
+            echo '<p>' . esc_html__( 'No warehouse allocations recorded.', 'wd-market-multi-warehouse' ) . '</p>';
+        }
+
+        $extraCost = (float) $order->get_meta( '_wdmw_extra_shipping_cost' );
+
+        if ( $extraCost > 0 ) {
+            echo '<p style="margin-top:8px"><strong>'
+                . esc_html__( 'Extra warehouse shipping:', 'wd-market-multi-warehouse' )
+                . '</strong> ' . wp_kses_post( wc_price( $extraCost ) ) . '</p>';
+        }
     }
 
     /**
@@ -94,12 +241,8 @@ class CheckoutHandler
      */
     public function preventDefaultStockReduction( bool $canReduce, \WC_Order $order ): bool
     {
-        // Only prevent if we've done our allocation
-        $items = $order->get_items();
-        foreach ( $items as $item ) {
-            if ( $item->get_meta( '_wdmw_warehouse_id' ) ) {
-                return false;
-            }
+        if ( $order->get_meta( '_wdmw_stock_allocated' ) ) {
+            return false;
         }
 
         return $canReduce;
@@ -130,11 +273,14 @@ class CheckoutHandler
         $allocations = $this->selectionService->selectWarehousesForCart( $cartItems, $shippingAddress );
 
         $nonClosestProducts = [];
-        foreach ( $allocations as $productId => $allocation ) {
-            if ( ! $allocation['is_closest'] && $allocation['extra_cost'] > 0 ) {
-                $product = wc_get_product( $productId );
-                if ( $product ) {
-                    $nonClosestProducts[] = $product->get_name();
+        foreach ( $allocations as $productId => $productAllocations ) {
+            foreach ( $productAllocations as $allocation ) {
+                if ( ! $allocation['is_closest'] && $allocation['extra_cost'] > 0 ) {
+                    $product = wc_get_product( $productId );
+                    if ( $product ) {
+                        $nonClosestProducts[] = $product->get_name();
+                    }
+                    break; // Only list the product name once.
                 }
             }
         }
@@ -152,43 +298,41 @@ class CheckoutHandler
     }
 
     /**
-     * Add extra shipping cost as a fee if products are fulfilled from non-closest warehouses.
+     * Add extra shipping fee if products are fulfilled from non-closest warehouses.
+     *
+     * Hooked directly to woocommerce_cart_calculate_fees so the fee is included
+     * in the cart/order totals (shipping packages are calculated after fees).
      */
-    public function addExtraShippingCost( array $packages ): array
+    public function addExtraShippingFee(): void
     {
         if ( get_option( 'wdmw_extra_shipping_enabled', '0' ) !== '1' ) {
-            return $packages;
+            return;
         }
 
         $shippingAddress = $this->getCheckoutShippingAddress();
 
         if ( empty( $shippingAddress ) ) {
-            return $packages;
+            return;
         }
 
         $cartItems   = $this->getCartItems();
         $allocations = $this->selectionService->selectWarehousesForCart( $cartItems, $shippingAddress );
 
         $totalExtraCost = 0.0;
-        foreach ( $allocations as $allocation ) {
-            if ( ! $allocation['is_closest'] && $allocation['extra_cost'] > 0 ) {
-                $totalExtraCost += $allocation['extra_cost'];
+        foreach ( $allocations as $productAllocations ) {
+            foreach ( $productAllocations as $allocation ) {
+                if ( ! $allocation['is_closest'] && $allocation['extra_cost'] > 0 ) {
+                    $totalExtraCost += $allocation['extra_cost'];
+                }
             }
         }
 
         if ( $totalExtraCost > 0 ) {
-            add_action(
-                'woocommerce_cart_calculate_fees',
-                static function () use ( $totalExtraCost ): void {
-                    WC()->cart->add_fee(
-                        __( 'Additional warehouse shipping', 'wd-market-multi-warehouse' ),
-                        $totalExtraCost
-                    );
-                }
+            WC()->cart->add_fee(
+                __( 'Additional warehouse shipping', 'wd-market-multi-warehouse' ),
+                $totalExtraCost
             );
         }
-
-        return $packages;
     }
 
     private function buildShippingAddress( \WC_Order $order ): string

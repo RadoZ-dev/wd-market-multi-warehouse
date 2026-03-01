@@ -29,27 +29,28 @@ class WarehouseSelectionService
     }
 
     /**
-     * Select the best warehouse for a product based on the customer's shipping address.
+     * Select warehouses for a product, splitting across multiple when needed.
      *
-     * Returns an associative array with:
-     *  - 'warehouse' => Warehouse
+     * Returns an array of allocations, each with:
+     *  - 'warehouse'  => Warehouse
+     *  - 'quantity'   => int (how many units to take from this warehouse)
      *  - 'is_closest' => bool (whether this is the nearest warehouse)
      *  - 'extra_cost' => float (additional shipping cost if not closest)
      *
-     * @return array{warehouse: Warehouse, is_closest: bool, extra_cost: float}|null
+     * @return array<int, array{warehouse: Warehouse, quantity: int, is_closest: bool, extra_cost: float}>
      */
-    public function selectWarehouse( int $productId, string $shippingAddress ): ?array
+    public function selectWarehouse( int $productId, int $quantity, string $shippingAddress ): array
     {
         $activeWarehouses = $this->warehouseRepository->findActive();
 
         if ( empty( $activeWarehouses ) ) {
-            return null;
+            return [];
         }
 
         $customerCoordinates = $this->geocoder->geocode( $shippingAddress );
 
         if ( $customerCoordinates === null ) {
-            return $this->fallbackToFirstAvailable( $productId, $activeWarehouses );
+            return $this->fallbackAllocations( $productId, $quantity, $activeWarehouses );
         }
 
         $sortedWarehouses = $this->sortByDistance(
@@ -58,23 +59,23 @@ class WarehouseSelectionService
             $customerCoordinates[1]
         );
 
-        return $this->findFirstWithStock( $productId, $sortedWarehouses );
+        return $this->allocateFromSorted( $productId, $quantity, $sortedWarehouses );
     }
 
     /**
-     * Select the best warehouse for each product in the cart.
+     * Select warehouses for each product in the cart.
      *
      * @param array<int, int> $cartItems productId => quantity
-     * @return array<int, array{warehouse: Warehouse, is_closest: bool, extra_cost: float}>
+     * @return array<int, array<int, array{warehouse: Warehouse, quantity: int, is_closest: bool, extra_cost: float}>>
      */
     public function selectWarehousesForCart( array $cartItems, string $shippingAddress ): array
     {
         $allocations = [];
 
         foreach ( $cartItems as $productId => $quantity ) {
-            $selection = $this->selectWarehouse( $productId, $shippingAddress );
+            $selection = $this->selectWarehouse( $productId, $quantity, $shippingAddress );
 
-            if ( $selection !== null ) {
+            if ( ! empty( $selection ) ) {
                 $allocations[ $productId ] = $selection;
             }
         }
@@ -119,59 +120,93 @@ class WarehouseSelectionService
     }
 
     /**
+     * Allocate stock from distance-sorted warehouses, splitting when necessary.
+     *
      * @param array<int, array{warehouse: Warehouse, distance: float}> $sortedWarehouses
-     * @return array{warehouse: Warehouse, is_closest: bool, extra_cost: float}|null
+     * @return array<int, array{warehouse: Warehouse, quantity: int, is_closest: bool, extra_cost: float}>
      */
-    private function findFirstWithStock( int $productId, array $sortedWarehouses ): ?array
+    private function allocateFromSorted( int $productId, int $quantity, array $sortedWarehouses ): array
     {
-        $stockMap = $this->stockRepository->getStockMapForProduct( $productId );
+        $stockMap    = $this->stockRepository->getStockMapForProduct( $productId );
+        $allocations = [];
+        $remaining   = $quantity;
 
         foreach ( $sortedWarehouses as $index => $entry ) {
             $warehouseId    = $entry['warehouse']->getId();
             $availableStock = $stockMap[ $warehouseId ] ?? 0;
 
-            if ( $availableStock > 0 ) {
-                $isClosest = ( $index === 0 );
-                $extraCost = 0.0;
+            if ( $availableStock <= 0 ) {
+                continue;
+            }
 
-                if ( ! $isClosest && $this->isExtraShippingEnabled() ) {
-                    $extraCost = $entry['warehouse']->getExtraShippingCost();
-                }
+            $allocateQty = min( $availableStock, $remaining );
+            $isClosest   = ( $index === 0 );
+            $extraCost   = 0.0;
 
-                return [
-                    'warehouse'  => $entry['warehouse'],
-                    'is_closest' => $isClosest,
-                    'extra_cost' => $extraCost,
-                ];
+            if ( ! $isClosest && $this->isExtraShippingEnabled() ) {
+                $extraCost = $entry['warehouse']->getExtraShippingCost();
+            }
+
+            $allocations[] = [
+                'warehouse'  => $entry['warehouse'],
+                'quantity'   => $allocateQty,
+                'is_closest' => $isClosest,
+                'extra_cost' => $extraCost,
+            ];
+
+            $remaining -= $allocateQty;
+
+            if ( $remaining <= 0 ) {
+                break;
             }
         }
 
-        return null;
+        return $allocations;
     }
 
     /**
-     * Fallback when geocoding fails: pick the first warehouse that has stock.
+     * Fallback when geocoding fails: allocate from warehouses in DB order.
      *
      * @param Warehouse[] $warehouses
-     * @return array{warehouse: Warehouse, is_closest: bool, extra_cost: float}|null
+     * @return array<int, array{warehouse: Warehouse, quantity: int, is_closest: bool, extra_cost: float}>
      */
-    private function fallbackToFirstAvailable( int $productId, array $warehouses ): ?array
+    private function fallbackAllocations( int $productId, int $quantity, array $warehouses ): array
     {
-        $stockMap = $this->stockRepository->getStockMapForProduct( $productId );
+        $stockMap    = $this->stockRepository->getStockMapForProduct( $productId );
+        $allocations = [];
+        $remaining   = $quantity;
+        $isFirst     = true;
 
         foreach ( $warehouses as $warehouse ) {
             $available = $stockMap[ $warehouse->getId() ] ?? 0;
 
-            if ( $available > 0 ) {
-                return [
-                    'warehouse'  => $warehouse,
-                    'is_closest' => true,
-                    'extra_cost' => 0.0,
-                ];
+            if ( $available <= 0 ) {
+                continue;
+            }
+
+            $allocateQty = min( $available, $remaining );
+            $extraCost   = 0.0;
+
+            if ( ! $isFirst && $this->isExtraShippingEnabled() ) {
+                $extraCost = $warehouse->getExtraShippingCost();
+            }
+
+            $allocations[] = [
+                'warehouse'  => $warehouse,
+                'quantity'   => $allocateQty,
+                'is_closest' => $isFirst,
+                'extra_cost' => $extraCost,
+            ];
+
+            $isFirst    = false;
+            $remaining -= $allocateQty;
+
+            if ( $remaining <= 0 ) {
+                break;
             }
         }
 
-        return null;
+        return $allocations;
     }
 
     private function isExtraShippingEnabled(): bool
