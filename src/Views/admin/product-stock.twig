@@ -1,0 +1,41 @@
+<div id="wdmw_warehouse_panel" class="panel woocommerce_options_panel">
+    <div class="options_group wdmw-warehouse-stock">
+        <p class="form-field">
+            <strong>{{ 'Warehouse Stock'|trans }}</strong>
+            <span class="description" style="margin-left: 10px;">
+                {{ 'Set stock quantities per warehouse. Total stock is synced to WooCommerce automatically.'|trans }}
+            </span>
+        </p>
+
+        {% if warehouses is empty %}
+            <p class="form-field">
+                <em>{{ 'No active warehouses found. Please create a warehouse first.'|trans }}</em>
+                <a href="admin.php?page=wdmw-warehouses&action=add" class="button button-small" style="margin-left: 10px;">
+                    {{ 'Add Warehouse'|trans }}
+                </a>
+            </p>
+        {% else %}
+            {% for warehouse in warehouses %}
+                <p class="form-field">
+                    <label for="wdmw_stock_{{ warehouse.id }}">
+                        {{ warehouse.name }}
+                    </label>
+                    <input type="number"
+                           id="wdmw_stock_{{ warehouse.id }}"
+                           name="wdmw_warehouse_stock[{{ warehouse.id }}]"
+                           value="{{ stock_map[warehouse.id] is defined ? stock_map[warehouse.id] : 0 }}"
+                           min="0"
+                           step="1"
+                           class="short"
+                           style="width: 80px;">
+                    <span class="description">{{ warehouse.address }}</span>
+                </p>
+            {% endfor %}
+
+            <p class="form-field">
+                <label><strong>{{ 'Total Stock:'|trans }}</strong></label>
+                <span class="wdmw-total-stock">{{ total_stock }}</span>
+            </p>
+        {% endif %}
+    </div>
+</div>

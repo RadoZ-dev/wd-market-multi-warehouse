@@ -1,0 +1,95 @@
+<div class="wrap">
+    <h1>{{ page_title }}</h1>
+
+    <a href="{{ back_url }}" class="page-title-action">&larr; {{ 'Back to Warehouses'|trans }}</a>
+
+    <form method="post" action="" class="wdmw-warehouse-form">
+        {{ nonce|raw }}
+        <input type="hidden" name="wdmw_action" value="save_warehouse">
+
+        {% if is_edit %}
+            <input type="hidden" name="warehouse_id" value="{{ warehouse.id }}">
+        {% endif %}
+
+        <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <label for="warehouse_name">{{ 'Warehouse Name'|trans }}</label>
+                </th>
+                <td>
+                    <input type="text"
+                           id="warehouse_name"
+                           name="warehouse_name"
+                           value="{{ is_edit ? warehouse.name : '' }}"
+                           class="regular-text"
+                           required>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="warehouse_address">{{ 'Address'|trans }}</label>
+                </th>
+                <td>
+                    <textarea id="warehouse_address"
+                              name="warehouse_address"
+                              class="large-text"
+                              rows="3"
+                              required>{{ is_edit ? warehouse.address : '' }}</textarea>
+                    <p class="description">
+                        {{ 'Full address for geocoding and distance calculation.'|trans }}
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">{{ 'Status'|trans }}</th>
+                <td>
+                    <label>
+                        <input type="checkbox"
+                               name="warehouse_active"
+                               value="1"
+                               {{ (not is_edit or warehouse.isActive()) ? 'checked' : '' }}>
+                        {{ 'Active'|trans }}
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="warehouse_extra_shipping">{{ 'Extra Shipping Cost'|trans }}</label>
+                </th>
+                <td>
+                    <input type="number"
+                           id="warehouse_extra_shipping"
+                           name="warehouse_extra_shipping"
+                           value="{{ is_edit ? warehouse.extraShippingCost|number_format(2) : '0.00' }}"
+                           step="0.01"
+                           min="0"
+                           class="small-text">
+                    <p class="description">
+                        {{ 'Additional shipping cost when this warehouse is NOT the closest to the customer.'|trans }}
+                    </p>
+                </td>
+            </tr>
+
+            {% if is_edit and warehouse.hasCoordinates() %}
+                <tr>
+                    <th scope="row">{{ 'Coordinates'|trans }}</th>
+                    <td>
+                        <p>
+                            <strong>{{ 'Lat:'|trans }}</strong> {{ warehouse.latitude|number_format(6) }},
+                            <strong>{{ 'Lon:'|trans }}</strong> {{ warehouse.longitude|number_format(6) }}
+                        </p>
+                        <p class="description">
+                            {{ 'Auto-detected from address. Will update when you save.'|trans }}
+                        </p>
+                    </td>
+                </tr>
+            {% endif %}
+        </table>
+
+        <p class="submit">
+            <button type="submit" class="button button-primary">
+                {{ is_edit ? 'Update Warehouse'|trans : 'Add Warehouse'|trans }}
+            </button>
+        </p>
+    </form>
+</div>

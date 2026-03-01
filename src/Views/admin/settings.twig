@@ -1,0 +1,70 @@
+<div class="wrap">
+    <h1>{{ page_title }}</h1>
+
+    {% if saved %}
+        <div class="notice notice-success is-dismissible">
+            <p>{{ 'Settings saved successfully.'|trans }}</p>
+        </div>
+    {% endif %}
+
+    <form method="post" action="">
+        {{ nonce|raw }}
+
+        <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <label for="wdmw_geocoding_provider">{{ 'Geocoding Provider'|trans }}</label>
+                </th>
+                <td>
+                    <select id="wdmw_geocoding_provider" name="wdmw_geocoding_provider">
+                        <option value="nominatim" {{ geocoding_provider == 'nominatim' ? 'selected' : '' }}>
+                            OpenStreetMap Nominatim ({{ 'Free'|trans }})
+                        </option>
+                        <option value="google" {{ geocoding_provider == 'google' ? 'selected' : '' }}>
+                            Google Maps
+                        </option>
+                    </select>
+                    <p class="description">
+                        {{ 'Nominatim is free and requires no API key. Google Maps requires an API key below.'|trans }}
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wdmw_google_api_key">{{ 'Google Maps API Key'|trans }}</label>
+                </th>
+                <td>
+                    <input type="text"
+                           id="wdmw_google_api_key"
+                           name="wdmw_google_api_key"
+                           value="{{ google_api_key }}"
+                           class="regular-text">
+                    <p class="description">
+                        {{ 'Required only if using Google Maps as the geocoding provider.'|trans }}
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">{{ 'Extra Shipping for Distant Warehouses'|trans }}</th>
+                <td>
+                    <label>
+                        <input type="checkbox"
+                               name="wdmw_extra_shipping_enabled"
+                               value="1"
+                               {{ extra_shipping_enabled == '1' ? 'checked' : '' }}>
+                        {{ 'Enable additional shipping cost when order is fulfilled from a non-closest warehouse'|trans }}
+                    </label>
+                    <p class="description">
+                        {{ 'When enabled, the extra shipping cost defined per warehouse will be added as a fee at checkout.'|trans }}
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+        <p class="submit">
+            <button type="submit" class="button button-primary">
+                {{ 'Save Settings'|trans }}
+            </button>
+        </p>
+    </form>
+</div>

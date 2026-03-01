@@ -1,0 +1,27 @@
+<div class="wdmw-variation-stock" style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-left: 3px solid #0073aa;">
+    <p><strong>{{ 'Warehouse Stock'|trans }}</strong></p>
+
+    {% if warehouses is empty %}
+        <p><em>{{ 'No active warehouses found.'|trans }}</em></p>
+    {% else %}
+        {% for warehouse in warehouses %}
+            <p class="form-row form-row-first">
+                <label for="wdmw_var_stock_{{ loop }}_{{ warehouse.id }}">
+                    {{ warehouse.name }}
+                </label>
+                <input type="number"
+                       id="wdmw_var_stock_{{ loop }}_{{ warehouse.id }}"
+                       name="wdmw_variation_stock[{{ loop }}][{{ warehouse.id }}]"
+                       value="{{ stock_map[warehouse.id] is defined ? stock_map[warehouse.id] : 0 }}"
+                       min="0"
+                       step="1"
+                       class="short"
+                       style="width: 80px;">
+            </p>
+        {% endfor %}
+
+        <p class="form-row">
+            <label><strong>{{ 'Total:'|trans }}</strong> {{ total_stock }}</label>
+        </p>
+    {% endif %}
+</div>

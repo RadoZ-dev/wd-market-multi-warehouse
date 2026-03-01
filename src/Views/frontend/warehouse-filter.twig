@@ -1,0 +1,17 @@
+<div class="wdmw-warehouse-filter">
+    <form method="get" action="{{ filter_url }}">
+        <label for="wdmw_warehouse">{{ label }}</label>
+        <select name="wdmw_warehouse" id="wdmw_warehouse" onchange="this.form.submit()">
+            <option value="">{{ all_label }}</option>
+            {% for warehouse in warehouses %}
+                <option value="{{ warehouse.id }}"
+                        {{ selected_warehouse == warehouse.id ? 'selected' : '' }}>
+                    {{ warehouse.name }}
+                </option>
+            {% endfor %}
+        </select>
+        <noscript>
+            <button type="submit" class="button">{{ 'Filter'|trans }}</button>
+        </noscript>
+    </form>
+</div>
