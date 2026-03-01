@@ -1,5 +1,6 @@
 # Dependencies
 /node_modules/
+/vendor/
 
 # Twig cache
 /cache/
@@ -16,3 +17,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# PHPUnit
+.phpunit.result.cache
