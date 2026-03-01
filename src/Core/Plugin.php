@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace WdMultiWarehouse\Core;
 
-use WdMultiWarehouse\Traits\SingletonTrait;
+use WdMultiWarehouse\Traits\Singleton;
 
 final class Plugin
 {
-    use SingletonTrait;
+    use Singleton;
 
     public function init(): void
     {
