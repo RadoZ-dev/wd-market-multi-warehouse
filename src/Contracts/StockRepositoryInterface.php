@@ -24,4 +24,7 @@ interface StockRepositoryInterface
 
     /** @return int[] warehouseId => quantity */
     public function getStockMapForProduct( int $productId ): array;
+
+    /** @return int[] product IDs with stock > 0 in the given warehouse */
+    public function getProductIdsInWarehouse( int $warehouseId ): array;
 }
