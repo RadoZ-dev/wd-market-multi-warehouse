@@ -1,61 +1,40 @@
 # WD Market Multi-Warehouse
 
-A WooCommerce plugin that adds multi-warehouse inventory management, enabling per-warehouse stock tracking, proximity-based warehouse selection at checkout, and catalog filtering by warehouse availability.
+A WooCommerce plugin for multi-warehouse inventory management with per-warehouse stock tracking, proximity-based fulfillment, and catalog filtering.
 
 ## Features
 
-- **Multiple Warehouses** — Define warehouses with name, address, and active/inactive status.
-- **Per-Warehouse Inventory** — Track stock quantities per warehouse instead of a single global number.
-- **Smart Warehouse Selection** — Automatically allocate inventory from the closest warehouse to the customer's shipping address at checkout, with fallback to the next closest.
-- **Oversell Prevention** — Stock is validated and reduced per warehouse on order completion.
-- **Catalog Filtering** — Customers can filter products by warehouse availability on the shop page.
-- **Optional Shipping Surcharge** — Apply additional shipping costs when orders are fulfilled from a non-closest warehouse, with a customer-facing notice.
+- **Multiple Warehouses** — Manage warehouses with name, address, coordinates, and active status
+- **Per-Warehouse Stock** — Track inventory quantities per warehouse with automatic WooCommerce sync
+- **Proximity-Based Allocation** — Auto-select nearest warehouse to customer at checkout using Haversine distance
+- **Split Fulfillment** — Automatically split orders across warehouses when single warehouse lacks full stock
+- **Geocoding** — Auto-detect coordinates from address via OpenStreetMap Nominatim (free) or Google Maps
+- **Catalog Filtering** — Filter shop products by warehouse availability
+- **Optional Shipping Surcharge** — Add fees when fulfilling from non-closest warehouse
+- **HPOS Compatible** — Supports WooCommerce High-Performance Order Storage
 
 ## Requirements
 
 - WordPress 5.8+
 - WooCommerce 6.0+
-- PHP 7.0+
-- Composer
+- PHP 7.4+
 
 ## Installation
 
-1. Clone or download this repository into `wp-content/plugins/`:
-   ```bash
-   cd wp-content/plugins/
-   git clone https://github.com/RadoZ-dev/wd-market-multi-warehouse.git
-   ```
-2. Install PHP dependencies:
-   ```bash
-   cd wd-market-multi-warehouse
-   composer install
-   ```
-3. Install front-end dependencies and build assets:
-   ```bash
-   npm install
-   npm run build
-   ```
-4. Activate the plugin in **WordPress Admin → Plugins**.
+1. Download or clone to `wp-content/plugins/wd-market-multi-warehouse/`
+2. Activate in **WordPress Admin → Plugins**
 
-## Development
+## Architecture
 
-```bash
-composer install        # Install PHP dependencies
-npm install             # Install Node dependencies
-npm run start           # Watch mode — auto-recompile JS/SCSS
-npm run build           # Production build
-```
-
-## Tech Stack
-
-- **PHP** with PSR-4 autoloading and SOLID architecture
-- **Twig 3.x** for templating
-- **@wordpress/scripts** for JS/SCSS compilation
+- **PSR-4 autoloading** with SOLID principles
+- **Dependency injection** via composition root
+- **Repository pattern** for data access
+- **Twig 3.x** templating
 
 ## Author
 
-**Radoslav Zdravkovic** — [zdravkovicradoslav@gmail.com](mailto:zdravkovicradoslav@gmail.com)
+**Radoslav Zdravkovic** — [GitHub](https://github.com/RadoZ-dev)
 
 ## License
 
-Proprietary. All rights reserved.
+GPL-2.0-or-later
