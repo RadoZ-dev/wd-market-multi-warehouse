@@ -7,6 +7,7 @@ namespace WdMultiWarehouse\Core;
 use WdMultiWarehouse\Admin\AdminMenu;
 use WdMultiWarehouse\Admin\ProductStockAdmin;
 use WdMultiWarehouse\Admin\SettingsPage;
+use WdMultiWarehouse\Core\AssetLoader;
 use WdMultiWarehouse\Frontend\CatalogFilter;
 use WdMultiWarehouse\Frontend\CheckoutHandler;
 use WdMultiWarehouse\Repositories\StockRepository;
@@ -72,5 +73,9 @@ final class Plugin
 
         // WooCommerce stock integration (both admin and frontend).
         $stockService->registerHooks();
+
+        // Enqueue CSS & JS assets.
+        $assetLoader = new AssetLoader();
+        $assetLoader->register();
     }
 }
