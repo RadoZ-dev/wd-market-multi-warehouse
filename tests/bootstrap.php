@@ -9,6 +9,14 @@ if ( ! defined( 'DAY_IN_SECONDS' ) ) {
     define( 'DAY_IN_SECONDS', 86400 );
 }
 
+if ( ! defined( 'WDMW_VERSION' ) ) {
+    define( 'WDMW_VERSION', '1.0.0' );
+}
+
+if ( ! defined( 'WDMW_PLUGIN_URL' ) ) {
+    define( 'WDMW_PLUGIN_URL', 'https://example.com/wp-content/plugins/wd-market-multi-warehouse/' );
+}
+
 // Minimal WooCommerce stubs required by unit tests.
 if ( ! class_exists( 'WC_Order_Item_Fee' ) ) {
     // phpcs:ignore
