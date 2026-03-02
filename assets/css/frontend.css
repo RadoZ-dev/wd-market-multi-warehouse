@@ -1,0 +1,26 @@
+/**
+ * WD Market Multi-Warehouse — Frontend Styles
+ */
+
+.wdmw-warehouse-filter {
+	margin-bottom: 20px;
+	padding: 10px 15px;
+	background: #f8f8f8;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.wdmw-warehouse-filter label {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.wdmw-warehouse-filter select {
+	min-width: 200px;
+	padding: 6px 10px;
+	border: 1px solid #ddd;
+	border-radius: 3px;
+}

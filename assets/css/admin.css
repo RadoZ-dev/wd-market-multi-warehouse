@@ -1,0 +1,40 @@
+/**
+ * WD Market Multi-Warehouse — Admin Styles
+ */
+
+/* Status badges */
+.wdmw-status {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.5;
+}
+
+.wdmw-status--active {
+	background-color: #c6e1c6;
+	color: #2e7d32;
+}
+
+.wdmw-status--inactive {
+	background-color: #f1c1c1;
+	color: #b71c1c;
+}
+
+/* Warehouse form */
+.wdmw-warehouse-form {
+	max-width: 800px;
+}
+
+/* Product stock panel */
+.wdmw-warehouse-stock {
+	border-top: 1px solid #ccd0d4;
+	margin-top: 10px;
+	padding-top: 10px;
+}
+
+.wdmw-warehouse-stock .wdmw-total-stock {
+	font-weight: bold;
+	font-size: 14px;
+}
